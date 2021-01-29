@@ -85,4 +85,42 @@ class UserTest extends BaseTestCase
         $this->assertFalse($user->can('test/some/not/so/specific'));
         $this->assertFalse($user->can('test/wildcard2/*'));
     }
+
+    public function testRefusals()
+    {
+        $role = new Role();
+        $role->setPermissions([
+            'a',
+            'a/b/*',
+            'a/b/c/d',
+            'c/*'
+        ]);
+        $role->setRefusals([
+            'a/b/c',
+            'a/b/e',
+            'c/b/a',
+            'c/d/*'
+        ]);
+
+        $user = new User('test');
+        $user->setRoles([$role]);
+
+        $this->assertFalse($user->can('a/b/c'));
+        $this->assertFalse($user->can('a/b/e'));
+        $this->assertTrue($user->can('a/b/d'));
+        $this->assertTrue($user->can('a/b/c/d'));
+        $this->assertFalse($user->can('c/b/a'));
+        $this->assertTrue($user->can('c/b/d'));
+        $this->assertFalse($user->can('c/d/u'));
+        $this->assertFalse($user->can('c/d/*'));
+
+        $secondRole = new Role();
+        $role->setRefusals(['a/b/*']);
+
+        $user->setRoles([$role, $secondRole]);
+
+        $this->assertFalse($user->can('a/b/d'));
+        $this->assertFalse($user->can('a/b/c/d'));
+        $this->assertTrue($user->can('c/b/d'));
+    }
 }
